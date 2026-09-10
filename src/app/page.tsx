@@ -20,6 +20,12 @@ export default function Home() {
         >
           Incidents →
         </Link>
+        <Link
+          href="/tickets"
+          className="inline-block rounded-md border border-black/10 dark:border-white/10 px-4 py-2 text-sm hover:bg-black/5 dark:hover:bg-white/5"
+        >
+          Tickets →
+        </Link>
       </div>
     </div>
   );

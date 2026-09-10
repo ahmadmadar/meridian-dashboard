@@ -1,19 +1,19 @@
 # AI-Assisted Delivery Log
 
-This project was built using an AI-assisted delivery workflow — Claude Code
+This project was built using an AI-assisted delivery workflow: Claude Code
 (CLI) handled scaffolding and screen implementation drafts, while
 architecture decisions, design walkthroughs, and review remained a
 human-in-the-loop process, per the "Session workflow" codified in
 `CLAUDE.md`. This doc makes that split explicit for the dashboard,
 parallel to the equivalent log in the sibling `meridian-fde-enterprise-demo`
-repo (`docs/ai-assisted-delivery.md` there) — kept as its own file rather
+repo (`docs/ai-assisted-delivery.md` there), kept as its own file rather
 than appended to that one, matching the two repos' deliberate independence
 (see this repo's `CLAUDE.md`, "What this project is").
 
 **Tool:** Claude Code (CLI)
 **Version control:** GitHub Desktop
 **Model of engagement:** one screen per session (`CLAUDE.md`'s "Session
-workflow") — read `CLAUDE.md`, design walkthrough before code (which MCP
+workflow"): read `CLAUDE.md`, design walkthrough before code (which MCP
 tool(s), loading/error states, layout), implement following the hard
 technical conventions, verify against the real deployed server (`npm run
 build`/`lint` clean, then the dev server against live data, hand-checked
@@ -26,15 +26,15 @@ and "Next steps" in `CLAUDE.md`, commit via GitHub Desktop.
 
 - [x] `create-next-app` scaffold (TypeScript, Tailwind, App Router, `src/`
       layout)
-- [x] `src/lib/mcp-client.ts` — server-only MCP client wrapper
-- [x] `src/lib/types.ts` — shared result types per tool
+- [x] `src/lib/mcp-client.ts`: server-only MCP client wrapper
+- [x] `src/lib/types.ts`: shared result types per tool
 - Screens:
-  - [x] Renewal Risk (`/renewal-risk`) — `get_renewal_risk`
-  - [x] Incidents (`/incidents`, `/incidents/[id]`) — `list_active_incidents`,
+  - [x] Renewal Risk (`/renewal-risk`): `get_renewal_risk`
+  - [x] Incidents (`/incidents`, `/incidents/[id]`): `list_active_incidents`,
         `check_incident_impact`
-  - [ ] Tickets — not started
-  - [ ] Account drill-down — not started
-  - [ ] Chat — not started
+  - [x] Tickets (`/tickets`): `search_tickets`
+  - [ ] Account drill-down: not started
+  - [ ] Chat: not started
 
 ## What required architectural decisions
 
@@ -43,16 +43,16 @@ and "Next steps" in `CLAUDE.md`, commit via GitHub Desktop.
   pattern, since the server runs `StreamableHTTPServerTransport` in
   stateless mode and holds no session between requests anyway. Sends the
   `dashboard-readonly` key as `x-api-key`, matching `authenticate()` in the
-  server repo's `scopes.ts` — not `Authorization`.
+  server repo's `scopes.ts`, not `Authorization`.
 - Guarding `mcp-client.ts` with `import "server-only"` as the actual
   enforcement mechanism behind "the dashboard-readonly key must stay
-  server-side only" — an accidental import from client code becomes a
+  server-side only": an accidental import from client code becomes a
   build error rather than a runtime leak.
 - Screens are Server Components calling `callMcpTool` directly, no
-  intermediate `/api` proxy route — reserved for when a screen genuinely
+  intermediate `/api` proxy route, reserved for when a screen genuinely
   needs client-side interactivity a route handler would serve better (the
   future chat feature), not added "for consistency" on read-only screens.
-- Every data route set `force-dynamic` — dashboard data must be current,
+- Every data route set `force-dynamic`: dashboard data must be current,
   not statically prerendered at build time.
 - Errors surfaced as structured `McpToolError` with the server's own
   `.code` (`NOT_FOUND`, `VALIDATION_ERROR`, `FORBIDDEN_SCOPE`, `CONFLICT`,
@@ -69,7 +69,7 @@ and "Next steps" in `CLAUDE.md`, commit via GitHub Desktop.
   screens deliberately avoid, for no real UX gain over a normal
   navigation.
 - Incidents list filter UI: declined for v1, matching Renewal Risk's
-  no-filter precedent — calls `list_active_incidents` with `{}` and
+  no-filter precedent: calls `list_active_incidents` with `{}` and
   renders the server's own default (non-RESOLVED statuses, limit 50).
   Weighed a severity filter (surfaces the SEV1 headline stat) against the
   precedent and against `CLAUDE.md` treating "decide filter UI" as its
@@ -78,15 +78,34 @@ and "Next steps" in `CLAUDE.md`, commit via GitHub Desktop.
 - `check_incident_impact`'s `NOT_FOUND` gets its own inline message
   ("No incident found for id …") on the detail page, rather than reusing
   the generic `${code}: ${message}` string the list page's error state
-  uses — a bad id in the URL bar is a distinct, expected case from a
+  uses: a bad id in the URL bar is a distinct, expected case from a
   genuine tool or connectivity failure.
+- Tickets filter mechanism: I had Claude drive the filters entirely off
+  URL search params via `next/form`, reading `searchParams` as a
+  `Promise` (this Next version's convention; Claude confirmed it
+  against `node_modules/next/dist/docs/` rather than assuming). No
+  client component, no `/api` route, keeping with the other read-only
+  screens.
+- Tickets category filter: `Ticket.category` is a free-text schema
+  column, not a real enum, but in practice the only values
+  `search_tickets` ever sees come from `prisma/seed.ts`'s fixed 6-item
+  list. Claude asked me to choose between a dropdown of those 6 values,
+  free text, or dropping the filter for now; I chose the dropdown for
+  UX consistency with the other typed filters, accepting that a 7th
+  seeded category would be unreachable from this filter until the
+  dropdown gets updated.
+- Tickets invalid-filter handling: I had any unrecognized value on a
+  filter param (bad status, bad category, etc.) silently dropped rather
+  than passed through to `search_tickets`, falling back to that
+  filter's unfiltered default, which avoids a `VALIDATION_ERROR`
+  round-trip over a hand-edited or stale URL.
 
 ## What Claude Code got wrong
 
 > **Issue:** During the scaffold + Renewal Risk session, the real
-> `dashboard-readonly` key was briefly pasted into `.env.example` — the
-> file deliberately un-ignored in `.gitignore` (`!.env.example`)
-> specifically so it gets committed as documentation — instead of the
+> `dashboard-readonly` key was briefly pasted into `.env.example` (the
+> file deliberately un-ignored in `.gitignore` via `!.env.example`,
+> specifically so it gets committed as documentation) instead of the
 > gitignored `.env.local`.
 > **Caught by:** Manual review before anything was committed to this repo.
 > **Fix:** Swapped the values (real key into `.env.local`, placeholder
@@ -94,13 +113,13 @@ and "Next steps" in `CLAUDE.md`, commit via GitHub Desktop.
 > `docs/ai-assisted-delivery.md` (Day 6 entry), written before this repo
 > had its own delivery log.
 > **Verification:** `git check-ignore -v .env.local .env.example`
-> confirmed `.env.local` is ignored and `.env.example` is not — now a
+> confirmed `.env.local` is ignored and `.env.example` is not; now a
 > standing pre-commit check written into this repo's `CLAUDE.md` for any
 > future change to either file.
 
 > **Issue:** The Incidents screen's new nav-bar and home-page links to
 > `/incidents` were first written as plain `<a>` elements.
-> **Caught by:** `npm run lint` — `@next/next/no-html-link-for-pages`.
+> **Caught by:** `npm run lint` (`@next/next/no-html-link-for-pages`).
 > **Fix:** Switched both to `next/link`'s `<Link>` component in
 > `src/app/page.tsx` and the nav in `src/app/layout.tsx`.
 > **Verification:** `npm run lint` and `npm run build` both clean
@@ -108,7 +127,7 @@ and "Next steps" in `CLAUDE.md`, commit via GitHub Desktop.
 
 ## Engagement log
 
-- **Session 1 — Scaffold + Renewal Risk:** Scaffolded with
+- **Day 6, Scaffold + Renewal Risk:** Scaffolded with
   `create-next-app` (TypeScript, Tailwind, App Router, `src/` layout).
   Built `src/lib/mcp-client.ts`, wrapping the official SDK's `Client` +
   `StreamableHTTPClientTransport`, one connection opened and closed per
@@ -120,13 +139,13 @@ and "Next steps" in `CLAUDE.md`, commit via GitHub Desktop.
   against live data from the deployed Render server
   (`https://meridian-mcp-server-k4ki.onrender.com`). Caught the
   `.env.example` near-miss above before the first commit.
-- **Session 2 — Incidents screen:** Read `list_active_incidents.ts` and
+- **Day 6, Incidents screen:** Read `list_active_incidents.ts` and
   `check_incident_impact.ts` from the sibling
   `meridian-fde-enterprise-demo` repo as the source of truth for both
   tools' shapes, per `CLAUDE.md`. Design walkthrough before code:
   confirmed with the user that the incident drill-in should be a
-  separate `/incidents/[id]` Server Component route, and — after
-  listing the pros/cons of a severity filter on request — that the
+  separate `/incidents/[id]` Server Component route, and, after
+  listing the pros/cons of a severity filter on request, that the
   incidents list should carry no filter UI for v1, matching Renewal
   Risk's precedent. Built `/incidents` (`list_active_incidents`, no
   filters) and `/incidents/[id]` (`check_incident_impact`), extended
@@ -139,7 +158,29 @@ and "Next steps" in `CLAUDE.md`, commit via GitHub Desktop.
   $65,718 MRR-impacted figure; a bogus incident id rendered the inline
   "No incident found" message instead of the generic error string.
   Updated `CLAUDE.md`'s "Current build status" and "Next steps" before
-  ending the session. Started this log itself as its own file after the
-  user asked whether dashboard work should log into the server repo's
-  `docs/ai-assisted-delivery.md` or get its own — decided on a parallel
-  file here, consistent with the repos' existing separation.
+  ending the session. Started this log itself as its own file after I
+  asked whether dashboard work should log into the server repo's
+  `docs/ai-assisted-delivery.md` or get its own, and decided on a
+  parallel file here, consistent with the repos' existing separation.
+- **Day 6, Tickets screen:** I had Claude read `search_tickets.ts`
+  and `constants.ts` from the sibling `meridian-fde-enterprise-demo`
+  repo as the source of truth for the tool's shape, and cross-check
+  `category` against `prisma/schema.prisma` (free-text column) and
+  `prisma/seed.ts` (the 6 values actually seeded). We did the design
+  walkthrough before code: Claude laid out the tool's input/output
+  shape, the `next/form`-based filter mechanism, and the table/badge
+  layout, then asked me to decide the category filter's UI per
+  `CLAUDE.md`'s explicit callout, and I chose the dropdown-of-known-values
+  option over free text or dropping it. Claude checked
+  `node_modules/next/dist/docs/` per `AGENTS.md` for this version's
+  `searchParams`-as-Promise convention and the `next/form` component
+  before writing any code. It built `/tickets`, extended
+  `src/lib/types.ts` with `TicketSummary`/`SearchTicketsResult`, and
+  added the home-page nav link. `npm run build`/`lint` both came back
+  clean. I had it verify end-to-end against the live deployed server:
+  default view (46 tickets, 13 SLA breached); `priority=P1` isolated to
+  exactly the P1 rows; `category=billing` isolated to exactly the
+  billing rows; `sla_risk=breached` isolated to exactly the breached
+  row; an invalid category value fell back to the unfiltered default
+  instead of erroring. Updated `CLAUDE.md`'s "Current build status" and
+  "Next steps."
