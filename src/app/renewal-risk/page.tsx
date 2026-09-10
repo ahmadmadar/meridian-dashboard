@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { callMcpTool, McpToolError } from "@/lib/mcp-client";
 import type { GetRenewalRiskResult, RiskLevel } from "@/lib/types";
 
@@ -55,7 +56,11 @@ export default async function RenewalRiskPage() {
           <tbody>
             {data.accounts.map((account) => (
               <tr key={account.id} className="border-b border-black/5 dark:border-white/5">
-                <td className="py-2 pr-4">{account.name}</td>
+                <td className="py-2 pr-4">
+                  <Link href={`/accounts/${account.id}`} className="hover:underline">
+                    {account.name}
+                  </Link>
+                </td>
                 <td className="py-2 pr-4">{account.plan_tier}</td>
                 <td className="py-2 pr-4">{formatUsd(account.mrr_usd)}</td>
                 <td className="py-2 pr-4">{account.health_score}</td>

@@ -79,3 +79,41 @@ export interface SearchTicketsResult {
   count: number;
   sla_breach_count: number;
 }
+
+export interface AccountUsage {
+  last_active: string;
+  trend: string;
+  feature_flags: Record<string, boolean>;
+}
+
+export interface AccountOpenTicket {
+  id: string;
+  priority: TicketPriority;
+  status: TicketStatus;
+  category: string;
+  sla_deadline: string;
+  sla_breached: boolean;
+}
+
+export interface AccountActiveIncident {
+  id: string;
+  title: string;
+  severity: IncidentSeverity;
+  status: IncidentStatus;
+}
+
+export interface GetAccount360Result {
+  account: {
+    id: string;
+    name: string;
+    plan_tier: string;
+    mrr_usd: number;
+    health_score: number;
+    renewal_date: string;
+    seat_utilization: string;
+  };
+  usage: AccountUsage | null;
+  open_tickets: AccountOpenTicket[];
+  sla_breach_count: number;
+  active_incidents: AccountActiveIncident[];
+}

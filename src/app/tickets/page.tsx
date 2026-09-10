@@ -1,4 +1,5 @@
 import Form from "next/form";
+import Link from "next/link";
 import { callMcpTool, McpToolError } from "@/lib/mcp-client";
 import type { SearchTicketsResult, SlaRisk, TicketPriority, TicketStatus } from "@/lib/types";
 
@@ -189,7 +190,11 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
           <tbody>
             {data.tickets.map((ticket) => (
               <tr key={ticket.id} className="border-b border-black/5 dark:border-white/5">
-                <td className="py-2 pr-4">{ticket.account_name}</td>
+                <td className="py-2 pr-4">
+                  <Link href={`/accounts/${ticket.account_id}`} className="hover:underline">
+                    {ticket.account_name}
+                  </Link>
+                </td>
                 <td className="py-2 pr-4">
                   <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITY_BADGE_CLASSES[ticket.priority]}`}>
                     {ticket.priority}

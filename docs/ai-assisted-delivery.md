@@ -33,7 +33,7 @@ and "Next steps" in `CLAUDE.md`, commit via GitHub Desktop.
   - [x] Incidents (`/incidents`, `/incidents/[id]`): `list_active_incidents`,
         `check_incident_impact`
   - [x] Tickets (`/tickets`): `search_tickets`
-  - [ ] Account drill-down: not started
+  - [x] Account drill-down (`/accounts/[id]`): `get_account_360`
   - [ ] Chat: not started
 
 ## What required architectural decisions
@@ -99,6 +99,18 @@ and "Next steps" in `CLAUDE.md`, commit via GitHub Desktop.
   than passed through to `search_tickets`, falling back to that
   filter's unfiltered default, which avoids a `VALIDATION_ERROR`
   round-trip over a hand-edited or stale URL.
+- Account drill-down entry points: `get_account_360` has no companion
+  list/search tool, so `/accounts/[id]` is reachable only by id. Rather
+  than leave it orphaned, I had Claude add cross-links from every place
+  an account id already surfaces in the existing screens — Renewal
+  Risk's account cell, Tickets' account cell, and the incident detail
+  page's affected-accounts table — instead of adding a standalone
+  accounts list screen or home-page link with nothing to point it at.
+- `feature_flags` type: Claude read `prisma/schema.prisma` in the
+  server repo before typing this field and caught that it's a JSON
+  object of flag name to boolean, not a string array as
+  `get_account_360`'s return shape might suggest at a glance; rendered
+  as badges colored by the boolean rather than a plain list.
 
 ## What Claude Code got wrong
 
@@ -184,3 +196,19 @@ and "Next steps" in `CLAUDE.md`, commit via GitHub Desktop.
   row; an invalid category value fell back to the unfiltered default
   instead of erroring. Updated `CLAUDE.md`'s "Current build status" and
   "Next steps."
+- **Day 6, Account drill-down:** Claude read `get_account_360.ts` and
+  `prisma/schema.prisma` from the sibling `meridian-fde-enterprise-demo`
+  repo as source of truth, catching that `feature_flags` is a JSON
+  object, not a string array. Design walkthrough before code: MCP tool,
+  error states (`NOT_FOUND` inline message matching the incident detail
+  precedent), and layout (header stats, nullable usage panel, open
+  tickets table, active incidents table linking to `/incidents/[id]`),
+  plus the entry-point decision above. Built `/accounts/[id]`, extended
+  `src/lib/types.ts` with `GetAccount360Result` and friends, and added
+  cross-links from Renewal Risk, Tickets, and the incident detail page.
+  `npm run build`/`lint` both clean. Verified end-to-end against the
+  live deployed server: every field on one real account hand-checked
+  against the tool's raw JSON response (including feature-flag badge
+  coloring and the "no active incidents" empty-state message), the
+  `NOT_FOUND` path on a bogus id, and all three cross-links. Updated
+  `CLAUDE.md`'s "Current build status" and "Next steps."

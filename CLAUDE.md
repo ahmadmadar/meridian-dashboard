@@ -142,6 +142,22 @@ Render server (`https://meridian-mcp-server-k4ki.onrender.com`):
   default view (46 tickets/13 breached), and `priority`, `category`,
   `sla_risk` filters each isolate the correct subset against the
   deployed server.
+- **Account drill-down** (`/accounts/[id]`): calls `get_account_360`
+  with `account_id`, renders account header stats, a usage panel
+  (nullable — renders a "no usage data" message when absent, since
+  `ProductUsage` is an optional 1:1 relation), open tickets, and active
+  incidents, each linking to `/incidents/[id]`. `feature_flags` is a
+  JSON object of flag name to boolean (not an array, per the server
+  repo's `schema.prisma`), rendered as badges colored by the boolean.
+  No standalone list/search screen exists for accounts (no such tool),
+  so it's reachable only by cross-links added to the account cells on
+  Renewal Risk, Tickets, and the incident detail page's affected
+  accounts table. `NOT_FOUND` renders an inline message like the
+  incident detail page. Verified live against the deployed server: all
+  fields hand-checked against the tool's raw JSON response for one
+  account (including feature-flag badge coloring and the empty-state
+  message when `active_incidents` is `[]`), plus the `NOT_FOUND` path
+  and all three cross-links.
 
 ## Next steps
 
@@ -152,7 +168,7 @@ dashboard its own MCP client running an agent loop):
 1. ~~Renewal Risk~~: done.
 2. ~~Incidents~~: done.
 3. ~~Tickets~~: done.
-4. **Account drill-down**: `get_account_360`.
+4. ~~Account drill-down~~: done.
 5. **Chat**: after all read-only screens. Scope this properly before
    starting; it's a different kind of build (the dashboard backend
    becomes its own MCP client running an agent loop), not just another
