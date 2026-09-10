@@ -102,12 +102,21 @@ rule. Each session:
 
 ## Current build status
 
-Scaffold done. One screen built and verified live against the deployed
+Scaffold done. Two screens built and verified live against the deployed
 Render server (`https://meridian-mcp-server-k4ki.onrender.com`):
 
 - **Renewal Risk** (`/renewal-risk`) — calls `get_renewal_risk` with no
   filters, renders the full default result as a table with a
   color-coded risk badge (high/medium/low).
+- **Incidents** (`/incidents`) — calls `list_active_incidents` with no
+  filters (server defaults to all non-RESOLVED, limit 50), renders a
+  table with severity/status badges. Each row links to
+  `/incidents/[id]`, a separate Server Component page that calls
+  `check_incident_impact` for the account-level drill-in
+  (affected accounts, MRR impacted, health scores). `NOT_FOUND` on a
+  stale/bad id renders an inline "No incident found" message rather
+  than the generic error string. No filter UI — matches Renewal Risk's
+  precedent; revisit if incident volume ever exceeds the 50-row default.
 
 ## Next steps
 
@@ -116,10 +125,7 @@ Build order, read-only screens before chat (per the server repo's
 dashboard its own MCP client running an agent loop):
 
 1. ~~Renewal Risk~~ — done.
-2. **Incidents** — likely `list_active_incidents` for the list,
-   `check_incident_impact` for a per-incident drill-in. Not yet scoped
-   in detail; confirm the drill-in interaction in the design walkthrough
-   before building.
+2. ~~Incidents~~ — done.
 3. **Tickets** — `search_tickets`. Decide filter UI (status, priority,
    category, sla_risk, account) in the design walkthrough.
 4. **Account drill-down** — `get_account_360`.

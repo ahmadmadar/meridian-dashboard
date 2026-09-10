@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Link from "next/link";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,6 +31,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <a href="/renewal-risk" className="text-sm text-foreground/70 hover:text-foreground">
               Renewal Risk
             </a>
+            <Link href="/incidents" className="text-sm text-foreground/70 hover:text-foreground">
+              Incidents
+            </Link>
           </nav>
         </header>
         <main className="flex-1">{children}</main>
