@@ -7,8 +7,8 @@ project to
 [`meridian-fde-enterprise-demo`](https://github.com/ahmadmadar/meridian-fde-enterprise-demo)
 (the MCP server itself), deployed independently.
 
-**Live:** https://meridian-dashboard-kappa.vercel.app/
-**MCP server:** https://meridian-mcp-server-k4ki.onrender.com
+- **Live:** https://meridian-dashboard-kappa.vercel.app/
+- **MCP server:** https://meridian-mcp-server-k4ki.onrender.com
 
 > Built using an AI-assisted delivery workflow (Claude Code): see
 > [`docs/ai-assisted-delivery.md`](docs/ai-assisted-delivery.md) for what
