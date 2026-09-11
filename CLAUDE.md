@@ -191,8 +191,8 @@ dashboard its own MCP client running an agent loop):
 6. ~~Deploy to Vercel~~: done. Live at
    `https://meridian-dashboard-kappa.vercel.app/`, verified end-to-end
    against the deployed MCP server.
-7. **README rewrite**: `README.md` is still unedited `create-next-app`
-   boilerplate; now unblocked since the live Vercel URL exists.
+7. ~~README rewrite~~ — done. Project overview, live links (dashboard
+   + MCP server), and a pointer to `docs/ai-assisted-delivery.md`.
 
 No automated test suite planned. Considered and declined: this repo has
 no business logic of its own to protect (no state mutations, no auth
