@@ -159,6 +159,16 @@ Render server (`https://meridian-mcp-server-k4ki.onrender.com`):
   message when `active_incidents` is `[]`), plus the `NOT_FOUND` path
   and all three cross-links.
 
+Deployed to Vercel: `https://meridian-dashboard-kappa.vercel.app/`.
+`MCP_SERVER_URL`/`MCP_KEY_DASHBOARD` set directly in Vercel's project
+settings, not in a committed file. Verified live (not just build-clean):
+all four screens hand-checked against the deployed MCP server's actual
+data, including `/renewal-risk` (6 accounts, 1 high risk) and
+`/tickets` (46 tickets, 13 SLA breached) cross-checked directly against
+a fresh `get_renewal_risk`/live tool call rather than assumed from
+memory, plus the incident drill-in, the account drill-down, and the
+`NOT_FOUND` error path on a bad account id.
+
 ## Next steps
 
 Build order, read-only screens before chat (per the server repo's
@@ -169,15 +179,28 @@ dashboard its own MCP client running an agent loop):
 2. ~~Incidents~~: done.
 3. ~~Tickets~~: done.
 4. ~~Account drill-down~~: done.
-5. **Chat**: after all read-only screens. Scope this properly before
-   starting; it's a different kind of build (the dashboard backend
-   becomes its own MCP client running an agent loop), not just another
-   screen.
-6. **Deploy to Vercel**: not yet done. When it happens, set
-   `MCP_SERVER_URL` and `MCP_KEY_DASHBOARD` directly in Vercel's project
-   settings, never in a committed file; same pattern as the server
-   repo's Render deployment.
+5. ~~Chat~~: scoped out, not deferred. Decided against building it: the
+   project's core FDE/SE signal is already fully demonstrated by the
+   server repo alone, and the dashboard's own "moment that sells it" is
+   already proven live through Claude Desktop as the MCP client, so chat
+   would add a second, separate skill demonstration rather than unlock
+   a new capability, at the cost of being the single largest remaining
+   scope item in either repo. Full reasoning and a "future addition"
+   note (a minimal single-shot Q&A widget) live in the server repo's
+   `docs/architecture.md`, "Chat: scoped out" section.
+6. ~~Deploy to Vercel~~: done. Live at
+   `https://meridian-dashboard-kappa.vercel.app/`, verified end-to-end
+   against the deployed MCP server.
+7. **README rewrite**: `README.md` is still unedited `create-next-app`
+   boilerplate; now unblocked since the live Vercel URL exists.
 
-No automated test suite yet. Worth adding once more than one screen
-exists and there's a real pattern to test against, rather than
-scaffolding a test setup for a single page.
+No automated test suite planned. Considered and declined: this repo has
+no business logic of its own to protect (no state mutations, no auth
+logic beyond forwarding a header), unlike the sibling repo's tested
+state machine and audit logging. The one piece of dashboard-specific
+logic (Tickets' URL-param validation, silently falling back to the
+unfiltered default on an invalid value) is a candidate for a small unit
+test if this ever gets picked back up, but a full integration suite
+isn't justified by the current risk surface. Revisit if real client-side
+logic is ever added (chat would have been the trigger for that; it was
+scoped out instead).

@@ -34,7 +34,8 @@ and "Next steps" in `CLAUDE.md`, commit via GitHub Desktop.
         `check_incident_impact`
   - [x] Tickets (`/tickets`): `search_tickets`
   - [x] Account drill-down (`/accounts/[id]`): `get_account_360`
-  - [ ] Chat: not started
+  - [x] Chat: scoped out (decision logged below, not built)
+- [x] Deployed to Vercel: https://meridian-dashboard-kappa.vercel.app/
 
 ## What required architectural decisions
 
@@ -111,6 +112,34 @@ and "Next steps" in `CLAUDE.md`, commit via GitHub Desktop.
   object of flag name to boolean, not a string array as
   `get_account_360`'s return shape might suggest at a glance; rendered
   as badges colored by the boolean rather than a plain list.
+- No automated test suite: considered matching the sibling repo's
+  `vitest` integration suite and declined. This repo has no business
+  logic of its own to protect (no state mutations, no auth logic beyond
+  forwarding a header), unlike the sibling's tested state machine and
+  transactional audit logging, so a full integration suite isn't
+  justified by the current risk surface. The one dashboard-specific
+  piece of logic worth protecting, Tickets' URL-param validation
+  (falling back to the unfiltered default on an invalid value), is a
+  candidate for a small unit test if this gets picked up again, not a
+  reason to build a full suite now.
+- Chat: decided against building it, not deferred by default. The
+  server repo alone already demonstrates the core FDE/SE signal end to
+  end (tool design, auth/scopes, state-machine enforcement, transactional
+  audit logging, a tested integration suite, live deployment, a
+  documented delivery process), and the dashboard's own "moment that
+  sells it" (the chained multi-tool-call scenario) is already proven
+  live through Claude Desktop as the MCP client. Chat would not unlock a
+  new capability, only add a second, largely separate skill
+  demonstration (agent-loop/MCP-client engineering), at the cost of
+  being the single largest, riskiest remaining scope item in either
+  repo. Reframed the dashboard's read-only scope as an intentional
+  design decision (an ops-visibility tool) rather than a limitation,
+  since the write-capable "agent that can act" story is already told
+  elsewhere. Full writeup and a "future addition" note (a minimal
+  single-shot Q&A widget via the Claude Agent SDK, no persisted state,
+  no streaming) went into the server repo's `docs/architecture.md`
+  rather than this file, since it's a system-wide decision that also
+  touches that repo's own stub doc.
 
 ## What Claude Code got wrong
 
@@ -212,3 +241,45 @@ and "Next steps" in `CLAUDE.md`, commit via GitHub Desktop.
   coloring and the "no active incidents" empty-state message), the
   `NOT_FOUND` path on a bogus id, and all three cross-links. Updated
   `CLAUDE.md`'s "Current build status" and "Next steps."
+- **Day 6, Scope decision (chat):** Used a thinking session with Claude
+  to reason through whether chat was actually necessary for this demo,
+  rather than building it by default because it was next on the
+  roadmap. Decided to skip it: the server repo alone already
+  demonstrates the core FDE/SE signal end to end, and the chained
+  multi-tool-call scenario that's the dashboard's own "moment that
+  sells it" is already proven live via Claude Desktop as the MCP
+  client, so chat would add a second, separate skill demonstration
+  rather than unlock a new capability, at the cost of being the
+  largest remaining scope item in either repo. I'm actively
+  job-searching now, so deploying and finishing docs on what's already
+  built outweighs that marginal signal. Had Claude update the server
+  repo's `docs/architecture.md` (previously a stub) with a "Dashboard"
+  section describing this repo's screens and MCP calls, a "Chat: scoped
+  out" section with the full reasoning, and a "future addition" note (a
+  minimal single-shot Q&A widget via the Claude Agent SDK, no persisted
+  multi-turn state, no streaming, explicitly not committed work).
+  Updated this repo's `CLAUDE.md` "Next steps" to reflect the decision
+  and added Vercel deployment and a README rewrite as the next two
+  items. Deployment itself and the README rewrite are picked up next
+  session, not done yet.
+- **Day 6, Deploy to Vercel + test suite decision:** Talked through
+  whether this repo needed an automated test suite like the sibling's
+  `vitest` integration suite, and decided against it: this dashboard has
+  no business logic of its own to protect (no mutations, no auth logic
+  beyond forwarding a header), unlike the sibling's tested state machine
+  and audit logging, so a full suite isn't justified by the current risk
+  surface. Logged the one dashboard-specific piece of logic that would
+  be worth a small unit test if this gets picked up again (Tickets'
+  URL-param validation, falling back to the unfiltered default on an
+  invalid value) without building it now. Deployed to Vercel: imported
+  the GitHub repo, set `MCP_SERVER_URL` and `MCP_KEY_DASHBOARD` directly
+  in Vercel's project settings (never in a committed file), confirmed
+  the build succeeded. Had Claude verify all four screens end-to-end
+  against the live deployed MCP server, not just the build log:
+  cross-checked `/renewal-risk`'s and `/tickets`' summary counts against
+  fresh direct tool calls rather than assumed values, and confirmed the
+  incident drill-in, account drill-down, and the `NOT_FOUND` error path
+  on a bad account id all render correctly. Live at
+  `https://meridian-dashboard-kappa.vercel.app/`. Updated `CLAUDE.md`'s
+  "Current build status" and "Next steps" (README rewrite is now the
+  only remaining item).
