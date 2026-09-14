@@ -14,6 +14,19 @@ project to
 > [`docs/ai-assisted-delivery.md`](docs/ai-assisted-delivery.md) for what
 > was generated versus decided by hand.
 
+## How this fits together
+
+This repo is a **read-only client** of the Meridian MCP server — it holds
+no business logic of its own and talks only to the server's deployed
+`/mcp` endpoint using a scoped, read-only API key.
+
+![System overview: Claude Desktop and the Meridian Dashboard both call the Meridian MCP server, which is the only component that talks to the database](docs/assets/overview.png)
+
+See the server repo's
+[`docs/architecture.md`](https://github.com/ahmadmadar/meridian-fde-enterprise-demo/blob/main/docs/architecture.md)
+for the full technical depth: tool design, scoped auth, and the sequence
+and class diagrams behind this picture.
+
 ## What this demonstrates
 
 - A Next.js frontend calling an MCP server's tools directly from Server
