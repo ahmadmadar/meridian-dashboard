@@ -54,7 +54,7 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
   const slaRiskParam = typeof params.sla_risk === "string" ? params.sla_risk : "";
   const accountIdParam = typeof params.account_id === "string" ? params.account_id.trim() : "";
 
-  const args: Record<string, unknown> = {};
+  const args: Record<string, unknown> = { limit: 100 };
   if (statusParam && isTicketStatus(statusParam)) args.status = statusParam;
   if (priorityParam && isTicketPriority(priorityParam)) args.priority = priorityParam;
   if (categoryParam && TICKET_CATEGORIES.includes(categoryParam)) args.category = categoryParam;
@@ -227,6 +227,13 @@ export default async function TicketsPage({ searchParams }: TicketsPageProps) {
           <p className="py-8 text-center text-foreground/60">No tickets match these filters.</p>
         )}
       </div>
+
+      {data.tickets.length > 0 && (
+        <p className="mt-3 text-sm text-foreground/60">
+          Showing {data.tickets.length} ticket{data.tickets.length === 1 ? "" : "s"}
+          {data.tickets.length === 100 ? " (first 100 — refine filters to narrow further)" : ""}
+        </p>
+      )}
     </div>
   );
 }

@@ -27,12 +27,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <header className="border-b border-black/10 dark:border-white/10">
           <nav className="mx-auto max-w-6xl px-6 py-4 flex items-center gap-6">
-            <span className="font-semibold">Meridian</span>
+            <Link href="/" className="font-semibold hover:text-foreground/80">
+              Meridian
+            </Link>
             <a href="/renewal-risk" className="text-sm text-foreground/70 hover:text-foreground">
               Renewal Risk
             </a>
             <Link href="/incidents" className="text-sm text-foreground/70 hover:text-foreground">
               Incidents
+            </Link>
+            <Link href="/tickets" className="text-sm text-foreground/70 hover:text-foreground">
+              Tickets
             </Link>
           </nav>
         </header>

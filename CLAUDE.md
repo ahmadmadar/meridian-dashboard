@@ -114,19 +114,35 @@ rule. Each session:
 Scaffold done. Two screens built and verified live against the deployed
 Render server (`https://meridian-mcp-server-k4ki.onrender.com`):
 
+- **Persistent nav** (`layout.tsx`): "Meridian" wordmark links to `/`;
+  Renewal Risk, Incidents, and Tickets are all present as top-level
+  links (Tickets was missing from the nav until the 2026-09-14 UX
+  pass — it existed as a screen but had no persistent entry point other
+  than the homepage card).
+- **Loading states**: each dynamic route has a `loading.tsx` (backed by
+  the shared `src/components/page-skeleton.tsx`) so a cold Render
+  free-tier spin-down shows a skeleton instead of a bare hang.
+  `/incidents/[id]` has no loading.tsx of its own — it inherits
+  `/incidents/loading.tsx` per Next.js's segment-tree Suspense
+  boundary rules, so a dedicated file would be redundant.
 - **Renewal Risk** (`/renewal-risk`): calls `get_renewal_risk` with no
   filters, renders the full default result as a table with a
-  color-coded risk badge (high/medium/low).
+  color-coded risk badge (high/medium/low). Health score is
+  color-coded by value (>=70 emerald, 40-69 amber, <40 red) as a
+  scanning aid, same treatment used on the account drill-down and
+  incident detail screens.
 - **Incidents** (`/incidents`): calls `list_active_incidents` with no
   filters (server defaults to all non-RESOLVED, limit 50), renders a
   table with severity/status badges. Each row links to
   `/incidents/[id]`, a separate Server Component page that calls
   `check_incident_impact` for the account-level drill-in
-  (affected accounts, MRR impacted, health scores). `NOT_FOUND` on a
+  (affected accounts, MRR impacted, health scores — same
+  emerald/amber/red color coding as Renewal Risk). `NOT_FOUND` on a
   stale/bad id renders an inline "No incident found" message rather
   than the generic error string. No filter UI: matches Renewal Risk's
   precedent; revisit if incident volume ever exceeds the 50-row default.
-- **Tickets** (`/tickets`): calls `search_tickets`, filters driven
+- **Tickets** (`/tickets`): calls `search_tickets` with `limit: 100`
+  (the tool's max; was implicitly using its 50 default), filters driven
   entirely by URL search params via `next/form` (GET, no client
   component, no API route; reads `searchParams` as a `Promise` per
   this Next version's convention). Status/priority/sla_risk are real
@@ -138,10 +154,14 @@ Render server (`https://meridian-mcp-server-k4ki.onrender.com`):
   a 7th category, since it'd silently be unreachable from this filter.
   An unrecognized/invalid query value for any filter is dropped rather
   than passed through, falling back to the unfiltered default. No
-  limit UI, matching the other two screens' precedent. Verified live:
-  default view (46 tickets/13 breached), and `priority`, `category`,
-  `sla_risk` filters each isolate the correct subset against the
-  deployed server.
+  pagination UI; instead a "Showing N tickets" footer that appends a
+  "(first 100 — refine filters to narrow further)" caveat only when the
+  100-row cap is actually hit, since `search_tickets`' `count` field is
+  just `tickets.length` post-`take`, not a true total — there's no way
+  to detect truncation other than checking against the cap itself.
+  Verified live: default view (40 tickets/8 breached, current seed),
+  and `priority`, `category`, `sla_risk` filters each isolate the
+  correct subset against the deployed server.
 - **Account drill-down** (`/accounts/[id]`): calls `get_account_360`
   with `account_id`, renders account header stats, a usage panel
   (nullable — renders a "no usage data" message when absent, since
@@ -149,7 +169,10 @@ Render server (`https://meridian-mcp-server-k4ki.onrender.com`):
   incidents, each linking to `/incidents/[id]`. `feature_flags` is a
   JSON object of flag name to boolean (not an array, per the server
   repo's `schema.prisma`), rendered as badges colored by the boolean.
-  No standalone list/search screen exists for accounts (no such tool),
+  Usage/Open Tickets/Active Incidents each render inside a subtly
+  shaded card (`bg-black/[0.02]` / `dark:bg-white/[0.03]` with a
+  border) so the sections read as distinct blocks instead of one flat
+  scroll. No standalone list/search screen exists for accounts (no such tool),
   so it's reachable only by cross-links added to the account cells on
   Renewal Risk, Tickets, and the incident detail page's affected
   accounts table. `NOT_FOUND` renders an inline message like the
@@ -157,17 +180,48 @@ Render server (`https://meridian-mcp-server-k4ki.onrender.com`):
   fields hand-checked against the tool's raw JSON response for one
   account (including feature-flag badge coloring and the empty-state
   message when `active_incidents` is `[]`), plus the `NOT_FOUND` path
-  and all three cross-links.
+  and all three cross-links. Has a breadcrumb (`Meridian / Accounts /
+  [Account Name]`) since it's reachable from three different screens
+  and has no obvious single "back" target.
+  **Decision: drill-through-only is intentional, not a gap.** No MCP
+  tool returns "all accounts" — `get_renewal_risk` only returns
+  accounts renewing within 90 days, so an "Accounts" index built from
+  it would silently exclude the rest and misrepresent itself as a full
+  list. Revisit only if the server repo ever adds a real
+  `list_accounts` tool.
 
 Deployed to Vercel: `https://meridian-dashboard-kappa.vercel.app/`.
 `MCP_SERVER_URL`/`MCP_KEY_DASHBOARD` set directly in Vercel's project
 settings, not in a committed file. Verified live (not just build-clean):
 all four screens hand-checked against the deployed MCP server's actual
-data, including `/renewal-risk` (6 accounts, 1 high risk) and
-`/tickets` (46 tickets, 13 SLA breached) cross-checked directly against
+data, including `/renewal-risk` (4 accounts, 1 high risk) and
+`/tickets` (40 tickets, 8 SLA breached) cross-checked directly against
 a fresh `get_renewal_risk`/live tool call rather than assumed from
 memory, plus the incident drill-in, the account drill-down, and the
-`NOT_FOUND` error path on a bad account id.
+`NOT_FOUND` error path on a bad account id. These counts shift on every
+reseed (most recently 2026-09-14, see below) since the seed script
+randomizes renewal dates/health scores/risk mix — they're a point-in-time
+sanity check, not a fixed target to keep matching.
+
+**Data-integrity fix (2026-09-14):** `get_renewal_risk` and
+`get_account_360` were rendering impossible seat-utilization values
+(e.g. "401/94", used > licensed) because the sibling server repo's
+`prisma/seed.ts` generated `seatsUsed` and `seatsLicensed` as two
+independent `randInt` calls. Fixed there to derive `seatsUsed` from
+`seatsLicensed` (`randInt(3, seatsLicensed)`), then re-seeded the *live*
+Render Postgres database (external connection string, run from a local
+machine per the server repo's `docs/setup.md`, since the free tier has
+no Shell access). This is a dashboard-repo session note, not a
+dashboard-repo code change — the fix itself lives entirely in
+`meridian-fde-enterprise-demo/prisma/seed.ts`. One wrinkle worth
+recording: `prisma db seed`/`npx prisma db seed` is a no-op in that repo
+(no `prisma.seed` config or `prisma.config.ts`), and the seed script has
+no cleanup step — re-running it appends a second batch of accounts
+rather than replacing the first. A stray first attempt against a local
+dev database (before finding the right command) doubled that database's
+account count before being caught and cleaned up; the actual production
+reseed was a single clean run against an emptied production DB. See
+`docs/ai-assisted-delivery.md` for the full incident writeup.
 
 ## Next steps
 

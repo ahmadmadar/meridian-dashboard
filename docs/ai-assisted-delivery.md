@@ -166,6 +166,30 @@ and "Next steps" in `CLAUDE.md`, commit via GitHub Desktop.
 > **Verification:** `npm run lint` and `npm run build` both clean
 > afterward.
 
+> **Issue:** While re-seeding the database for the seat-utilization fix,
+> Claude assumed `npx prisma db seed` would run the project's seed
+> script; it silently no-op'd because the repo has no `prisma.seed`
+> config. It then ran the actual seed command (`npm run db:seed`)
+> against whatever `DATABASE_URL` was in the sibling repo's local `.env`
+> without first checking where that pointed, which turned out to be a
+> local Postgres instance, not the live database — and since the seed
+> script has no cleanup step, that local database's account count
+> silently doubled (20 to 40, half still carrying the bug) before the
+> mismatch was caught.
+> **Caught by:** Manually diffing the re-seeded data against the live
+> dashboard's rendered output and noticing the bad values hadn't
+> actually changed, which prompted checking `DATABASE_URL`'s host
+> directly.
+> **Fix:** Cleaned up the doubled local database, located the real
+> production connection method in the server repo's own
+> `docs/setup.md` (external connection string, run manually — the free
+> Render tier has no Shell access), got that connection string from me,
+> and re-ran a single clean delete-then-seed cycle directly against
+> production.
+> **Verification:** Queried the production database directly (not just
+> the dashboard's rendered output) before and after: 10 of 20 accounts
+> violated the seat-utilization invariant beforehand, 0 of 20 afterward.
+
 ## Engagement log
 
 - **Day 6, Scaffold + Renewal Risk:** Scaffolded with
@@ -283,3 +307,47 @@ and "Next steps" in `CLAUDE.md`, commit via GitHub Desktop.
   `https://meridian-dashboard-kappa.vercel.app/`. Updated `CLAUDE.md`'s
   "Current build status" and "Next steps" (README rewrite is now the
   only remaining item).
+- **Day 7, UX pass:** Did a visual review pass over screenshots of the
+  deployed dashboard, not just a data review, and found several real
+  issues. Had Claude fix them in priority order: made the "Meridian"
+  wordmark in the nav link to `/` and added a breadcrumb
+  (`Meridian / Accounts / [Account Name]`) to the account drill-down
+  page, since it's reachable from three different screens with no
+  single obvious "back" target; added Tickets to the persistent top
+  nav, which had been missing since that screen was built (it only had
+  a homepage card link); added a max-width card treatment (subtle
+  background + border) around the Usage/Open Tickets/Active Incidents
+  sections on the account drill-down page so they read as distinct
+  blocks instead of one flat scroll, and extended the existing
+  risk/severity-badge color pattern to health scores (emerald/amber/red
+  by value) on Renewal Risk, the account page, and the incident detail
+  page's affected-accounts table; added a `loading.tsx` skeleton per
+  route (backed by one shared `PageSkeleton` component) so a cold
+  Render free-tier spin-down shows a skeleton instead of a bare hang;
+  and added a "Showing N tickets" footer to the Tickets screen, bumping
+  its `search_tickets` call to `limit: 100` (the tool's max) and only
+  surfacing a truncation caveat when that cap is actually hit, since
+  the tool's `count` field is just the post-`take` row count, not a
+  true total. Also formalized a decision that was already implicit but
+  not stated outright: no Accounts index screen, because no MCP tool
+  returns "all accounts" (`get_renewal_risk` only returns the
+  renewal-risk subset) and building one from that tool would
+  misrepresent a partial list as complete.
+
+  The most substantial catch was a real data-integrity bug, not a
+  dashboard bug: Renewal Risk and the account page were rendering
+  impossible seat-utilization values (e.g. "401/94", used seats
+  exceeding licensed seats). Traced it to the sibling
+  `meridian-fde-enterprise-demo` repo's `prisma/seed.ts`, which
+  generated `seatsUsed` and `seatsLicensed` as two independent random
+  rolls instead of deriving one from the other. Fixed the generation
+  logic there and re-seeded the live Render Postgres database against
+  its external connection string (the free tier has no Shell access,
+  so this runs from a local machine per that repo's `docs/setup.md`).
+  Verified directly against the database: 0 of 20 accounts violate
+  `seatsUsed <= seatsLicensed` post-fix, versus 10 of 20 before.
+  Re-verified all four dashboard screens live afterward with updated
+  counts (4 accounts/1 high risk on Renewal Risk, 40 tickets/8
+  breached, 1 active incident/0 SEV1). Updated `CLAUDE.md`'s "Current
+  build status" with the new numbers and a note that these shift on
+  every reseed.

@@ -21,6 +21,12 @@ function formatUsd(amount: number): string {
   return amount.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }
 
+function healthScoreClasses(score: number): string {
+  if (score >= 70) return "text-emerald-700 dark:text-emerald-400";
+  if (score >= 40) return "text-amber-700 dark:text-amber-400";
+  return "text-red-700 dark:text-red-400";
+}
+
 export default async function IncidentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
@@ -91,7 +97,7 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
                 </td>
                 <td className="py-2 pr-4">{account.plan_tier}</td>
                 <td className="py-2 pr-4">{formatUsd(account.mrr_usd)}</td>
-                <td className="py-2 pr-4">{account.health_score}</td>
+                <td className={`py-2 pr-4 font-medium ${healthScoreClasses(account.health_score)}`}>{account.health_score}</td>
               </tr>
             ))}
           </tbody>
